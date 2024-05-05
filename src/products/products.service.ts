@@ -1,22 +1,22 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Post } from '@nestjs/common';
+import {randomUUID} from 'node:crypto'
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PRODUCT_IMAGES } from './product-image';
-import { CreateProductDto } from './dto/create-product.request';
+import { CreateProductDto } from './dto/create-product.dto';
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async createProduct(data: CreateProductDto, userId: number) {
-    return this.prismaService.product.create({
-      data: {
-        ...data,
-        userId,f
-      },
-    });
+
+  async createProduct(userId: string, data: CreateProductDto, fileName:string) {
+
+
+
+
   }
 
   async getProducts() {
@@ -30,12 +30,15 @@ export class ProductsService {
     );
   }
 
-  async getProduct(productId: number) {
+  async getProduct(productId: string) {
     try {
+      const product = await this.prismaService.product.
     } catch (error) {
       throw new NotFoundException(`Product not found with ID ${productId}`);
     }
   }
+
+  async updateProduct(productId:string)
 
   private async imageExists(productId: number) {
     try {

@@ -11,6 +11,7 @@ import ms from 'ms';
 import { UsersService } from 'src/users/users.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { TokenPayload } from './token-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +35,7 @@ export class AuthService {
             ms(this.configService.getOrThrow<string>('JWT_EXPIRATION')),
         );
 
-        const payload = { email, username: user.username };
+        const payload: TokenPayload = { userId: user.id };
         const accessToken = this.jwtService.sign(payload);
 
         return { accessToken };
@@ -53,13 +54,14 @@ export class AuthService {
       throw new ForbiddenException('user already exists');
     }
 
+    // TODO:
     const expires = new Date();
     expires.setMilliseconds(
       expires.getMilliseconds() +
         ms(this.configService.getOrThrow<string>('JWT_EXPIRATION')),
     );
 
-    const payload = { email, username: user.username };
+    const payload: TokenPayload = { userId: user.id };
     const accessToken = this.jwtService.sign(payload);
     await this.usersService.createUser({ email, username, password });
 
