@@ -1,7 +1,11 @@
 declare module 'express' {
   interface Request {
-    user: { email: string; id: string; role: 'ADMIN' | 'USER' };
+    user: UserInfo;
   }
 }
 
-export {};
+export interface UserInfo {
+  email: string;
+  id: string;
+  role: 'ADMIN' | 'USER';
+}

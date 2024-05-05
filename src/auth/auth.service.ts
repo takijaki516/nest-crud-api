@@ -6,12 +6,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import ms from 'ms';
 
 import { UsersService } from 'src/users/users.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { TokenPayload } from './token-payload.interface';
+import { TokenPayload } from './token-payload';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +19,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly prismaService: PrismaService,
   ) {}
 
   async login(loginUserDto: LoginUserDto) {
@@ -29,16 +30,10 @@ export class AuthService {
     if (user) {
       const match = await bcrypt.compare(password, user.password);
       if (match) {
-        const expires = new Date();
-        expires.setMilliseconds(
-          expires.getMilliseconds() +
-            ms(this.configService.getOrThrow<string>('JWT_EXPIRATION')),
-        );
+        const accessToken = await this.createAccessToken({ userId: user.id });
+        const refreshToken = await this.rotateRefreshToken({ userId: user.id });
 
-        const payload: TokenPayload = { userId: user.id };
-        const accessToken = this.jwtService.sign(payload);
-
-        return { accessToken };
+        return { accessToken, refreshToken };
       }
       throw new UnauthorizedException('login failed');
     } else {
@@ -54,17 +49,87 @@ export class AuthService {
       throw new ForbiddenException('user already exists');
     }
 
-    // TODO:
-    const expires = new Date();
-    expires.setMilliseconds(
-      expires.getMilliseconds() +
-        ms(this.configService.getOrThrow<string>('JWT_EXPIRATION')),
+    const newUser = await this.usersService.createUser({
+      email,
+      username,
+      password,
+    });
+
+    const payload: TokenPayload = { userId: newUser.id };
+    const accessToken = await this.createAccessToken(payload);
+    const refreshToken = await this.rotateRefreshToken(payload);
+
+    return { accessToken, refreshToken };
+  }
+
+  async refresh(userId: string) {
+    const accessToken = await this.createAccessToken({ userId });
+    const refreshToken = await this.rotateRefreshToken({ userId });
+
+    return { accessToken, refreshToken };
+  }
+
+  async removeRefreshToken(userId: string) {
+    await this.prismaService.refreshToken.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+  }
+
+  async deleteUser(userId: string) {
+    await this.prismaService.user.delete({
+      where: {
+        id: userId,
+      },
+    });
+  }
+
+  private createAccessToken(payload: TokenPayload) {
+    return this.jwtService.signAsync(payload, {
+      secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+      expiresIn: this.configService.getOrThrow<string>('JWT_EXPIRATION'),
+    });
+  }
+
+  private createRefreshToken(payload: TokenPayload) {
+    return this.jwtService.signAsync(payload, {
+      secret: this.configService.getOrThrow<string>('REFRESH_JWT_SECRET'),
+      expiresIn: this.configService.getOrThrow<string>(
+        'REFRESH_JWT_EXPIRATION',
+      ),
+    });
+  }
+
+  private async saveRefreshToken(userId: string, hashedRt: string) {
+    await this.prismaService.refreshToken.create({
+      data: {
+        token: hashedRt,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    });
+  }
+
+  private async rotateRefreshToken(rfPayload: TokenPayload) {
+    const userId = rfPayload.userId;
+
+    await this.prismaService.refreshToken.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+
+    const newRefreshToken = await this.createRefreshToken(rfPayload);
+    const hashedRt = await bcrypt.hash(
+      newRefreshToken,
+      this.configService.getOrThrow<number>('REFRESH_JWT_SALT_ROUNDS'),
     );
+    await this.saveRefreshToken(userId, hashedRt);
 
-    const payload: TokenPayload = { userId: user.id };
-    const accessToken = this.jwtService.sign(payload);
-    await this.usersService.createUser({ email, username, password });
-
-    return { accessToken };
+    return newRefreshToken;
   }
 }

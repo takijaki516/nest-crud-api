@@ -1,54 +1,69 @@
-import { promises as fs } from 'fs';
-import { join } from 'path';
-import { Injectable, NotFoundException, Post } from '@nestjs/common';
-import {randomUUID} from 'node:crypto'
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PRODUCT_IMAGES } from './product-image';
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prismaService: PrismaService) {}
 
+  async createProduct(
+    userId: string,
+    data: CreateProductDto,
+    fileName: string,
+  ) {
+    const product = await this.prismaService.product.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        tags: data.tags,
+        imageId: fileName,
+        users: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    });
 
-  async createProduct(userId: string, data: CreateProductDto, fileName:string) {
-
-
-
-
+    return product;
   }
 
-  async getProducts() {
-    const products = await this.prismaService.product.findMany();
-
-    return Promise.all(
-      products.map(async (product) => ({
-        ...product,
-        imageExists: await this.imageExists(product.id),
-      })),
-    );
+  // NOTE: 첫번째 page는 0부터 시작
+  async getProducts(size: number, page: number) {
+    const products = await this.prismaService.product.findMany({
+      take: size,
+      skip: (page - 1) * size,
+    });
+    return products;
   }
 
   async getProduct(productId: string) {
-    try {
-      const product = await this.prismaService.product.
-    } catch (error) {
-      throw new NotFoundException(`Product not found with ID ${productId}`);
+    const product = await this.prismaService.product.findUnique({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
     }
+
+    return product;
   }
 
-  async updateProduct(productId:string)
+  async updateProduct(productId: string, updateProductDto: UpdateProductDto) {
+    const product = await this.prismaService.product.update({
+      where: {
+        id: productId,
+      },
+      data: {
+        ...updateProductDto,
+      },
+    });
 
-  private async imageExists(productId: number) {
-    try {
-      await fs.access(
-        join(`${PRODUCT_IMAGES}/${productId}.jpg`),
-        fs.constants.F_OK,
-      );
-      return true;
-    } catch (error) {
-      return false;
-    }
+    return product;
   }
 }

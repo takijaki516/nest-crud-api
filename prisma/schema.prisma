@@ -28,21 +28,36 @@ enum OrderEventStatus {
 
 model User {
   id       String @id @default(cuid())
-  username     String
+  username String
   email    String @unique
   password String
   role     Role   @default(USER)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
   addresses Address[]
   cartItems CartItem[]
   orders    Order[]
+  products  Product[]
+
+  refreshToken RefreshToken? // NOTE: One-to-one relation
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RefreshToken {
+  id    String @id @default(cuid())
+  token String
+  // expiresAt DateTime
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }
 
 model Address {
-  id      String  @id @default(cuid())
+  id String @id @default(cuid())
+
   lineOne String
   lineTwo String?
   city    String
@@ -62,6 +77,11 @@ model Product {
   description String
   price       Decimal
   tags        String
+  imageId     String?
+
+  // NOTE: Only ADMIN can create products
+  userId String
+  users  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   cartItems CartItem[]
   orders    OrderProduct[]
@@ -70,26 +90,31 @@ model Product {
   updatedAt DateTime @updatedAt
 }
 
+// TODO: add category
+// model Category {
+// }
+
 model CartItem {
-  id        String  @id @default(cuid())
+  id       String @id @default(cuid())
+  quantity Int
+
   userId    String
   user      User    @relation(fields: [userId], references: [id])
   productId String
   product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Order {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
+  id      String           @id @default(cuid())
   amount  Decimal
   address String
   status  OrderEventStatus @default(PENDING)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   products OrderProduct[]
   events   OrderEvent[]
@@ -99,21 +124,20 @@ model Order {
 }
 
 model OrderProduct {
-  id String @id @default(cuid())
+  id       String @id @default(cuid())
+  quantity Int
 
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id])
   productId String
   product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model OrderEvent {
-  id String @id @default(cuid())
-
+  id      String @id @default(cuid())
   orderId String
   order   Order  @relation(fields: [orderId], references: [id])
 

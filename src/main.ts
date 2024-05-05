@@ -11,7 +11,12 @@ async function bootstrap() {
 
   // REVIEW:
   app.useLogger(app.get(Logger));
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+
+  // REVIEW:
+  app.useGlobalInterceptors();
+
   app.use(cookieParser());
   await app.listen(app.get(ConfigService).getOrThrow('PORT'));
 }
