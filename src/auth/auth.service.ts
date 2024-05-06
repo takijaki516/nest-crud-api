@@ -25,7 +25,7 @@ export class AuthService {
   async login(loginUserDto: LoginUserDto) {
     const { email, password } = loginUserDto;
 
-    const user = await this.usersService.getUser(email);
+    const user = await this.usersService.getUserByEmail(email);
 
     if (user) {
       const match = await bcrypt.compare(password, user.password);
@@ -44,7 +44,7 @@ export class AuthService {
   async signup(createUserDto: CreateUserDto) {
     const { email, password, username } = createUserDto;
 
-    const user = await this.usersService.getUser(email);
+    const user = await this.usersService.getUserById(email);
     if (user) {
       throw new ForbiddenException('user already exists');
     }
@@ -94,9 +94,9 @@ export class AuthService {
 
   private createRefreshToken(payload: TokenPayload) {
     return this.jwtService.signAsync(payload, {
-      secret: this.configService.getOrThrow<string>('REFRESH_JWT_SECRET'),
+      secret: this.configService.getOrThrow<string>('REFRESH_TOKEN_SECRET'),
       expiresIn: this.configService.getOrThrow<string>(
-        'REFRESH_JWT_EXPIRATION',
+        'REFRESH_TOKEN_EXPIRATION',
       ),
     });
   }
@@ -126,8 +126,9 @@ export class AuthService {
     const newRefreshToken = await this.createRefreshToken(rfPayload);
     const hashedRt = await bcrypt.hash(
       newRefreshToken,
-      this.configService.getOrThrow<number>('REFRESH_JWT_SALT_ROUNDS'),
+      +this.configService.getOrThrow('REFRESH_TOKEN_SALT_ROUNDS'),
     );
+
     await this.saveRefreshToken(userId, hashedRt);
 
     return newRefreshToken;

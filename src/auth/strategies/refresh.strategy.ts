@@ -5,6 +5,8 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 
 import { UsersService } from 'src/users/users.service';
+import { UserInfo } from 'src/types/req-user.type';
+import { TokenPayload } from '../token-payload';
 
 @Injectable()
 export class RefreshJwtStrategy extends PassportStrategy(
@@ -17,17 +19,19 @@ export class RefreshJwtStrategy extends PassportStrategy(
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => req.cookies.refresh_token,
+        (req: Request) => {
+          return req.cookies.refresh_token;
+        },
       ]),
       ignoreExpiration: true, // REVIEW:
-      secretOrKey: configService.getOrThrow<string>('REFRESH_JWT_SECRET'),
+      secretOrKey: configService.get('REFRESH_TOKEN_SECRET'),
     });
   }
 
-  async validate(payload: { userId: string; userEmail: string }) {
-    const { userEmail } = payload;
+  async validate(payload: TokenPayload): Promise<UserInfo> {
+    const { userId } = payload;
 
-    const user = await this.usersService.getUser(userEmail);
+    const user = await this.usersService.getUserById(userId);
 
     if (!user) {
       throw new UnauthorizedException();

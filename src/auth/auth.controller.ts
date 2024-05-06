@@ -16,20 +16,29 @@ import { GetCurrentUser } from 'src/common/decorators/get-current-user.decorator
 import { UserInfo } from 'src/types/req-user.type';
 import { RefreshJwtGuard } from './guards/refresh-jwt-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCookieAuth,
+  ApiTags,
+} from '@nestjs/swagger';
 
 // TODO: refresh token, HTTP status code
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @ApiBody({ type: LoginUserDto })
   @Post('login')
   async login(
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const { accessToken } = await this.authService.login(loginUserDto);
+    const { accessToken, refreshToken } =
+      await this.authService.login(loginUserDto);
 
-    response.cookie('refresh_token', accessToken, {
+    response.cookie('refresh_token', refreshToken, {
       // secure: true,
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days,
@@ -43,14 +52,16 @@ export class AuthController {
     };
   }
 
+  @ApiBody({ type: CreateUserDto })
   @Post('signup')
   async signup(
     @Body(ValidationPipe) createUserDto: CreateUserDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const { accessToken } = await this.authService.signup(createUserDto);
+    const { accessToken, refreshToken } =
+      await this.authService.signup(createUserDto);
 
-    response.cookie('access_token', accessToken, {
+    response.cookie('refresh_token', refreshToken, {
       // secure: true,
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days,
@@ -60,9 +71,11 @@ export class AuthController {
 
     return {
       message: 'user created successful',
+      data: accessToken,
     };
   }
 
+  @ApiCookieAuth()
   @UseGuards(RefreshJwtGuard)
   @Post('refresh')
   async refresh(
@@ -85,6 +98,7 @@ export class AuthController {
   }
 
   // TODO:
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(
@@ -105,6 +119,7 @@ export class AuthController {
     return { message: 'logout successful' };
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Delete()
   async delete(

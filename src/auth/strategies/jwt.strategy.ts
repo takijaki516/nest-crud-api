@@ -5,9 +5,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { TokenPayload } from '../token-payload';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UserInfo } from 'src/types/req-user.type';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'access-jwt') {
   constructor(
     configService: ConfigService,
     private readonly prismaService: PrismaService,
@@ -20,7 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   // REVIEW:
   // req.user에 담김
-  async validate(payload: TokenPayload) {
+  async validate(payload: TokenPayload): Promise<UserInfo> {
     const { userId } = payload;
     const user = await this.prismaService.user.findUnique({
       where: { id: userId },

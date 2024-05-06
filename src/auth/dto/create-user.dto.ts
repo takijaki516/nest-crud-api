@@ -8,17 +8,27 @@ import {
 } from 'class-validator';
 
 export class CreateUserDto {
+  @ApiProperty({
+    description: 'email must be unique',
+    type: String,
+  })
   @IsString()
   @MinLength(4)
   @MaxLength(20)
-  @ApiProperty()
   email: string;
 
+  @ApiProperty({
+    description: 'username',
+    type: String,
+  })
   @IsString()
   @IsNotEmpty()
-  @ApiProperty()
   username: string;
 
+  @ApiProperty({
+    description: 'password',
+    type: String,
+  })
   @IsString()
   @MinLength(4)
   @MaxLength(20)

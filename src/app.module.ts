@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { LoggerModule } from 'nestjs-pino';
+import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -14,26 +13,26 @@ import { OrdersModule } from './orders/orders.module';
 @Module({
   imports: [
     // REVIEW:
-    LoggerModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const isProduction = configService.get('NODE_ENV') === 'production';
-        return {
-          pinoHttp: {
-            transport: isProduction
-              ? undefined
-              : {
-                  target: 'pino-pretty',
-                  options: {
-                    singleLine: true,
-                  },
-                },
-            level: isProduction ? 'info' : 'debug',
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
+    // LoggerModule.forRootAsync({
+    //   imports: [ConfigModule],
+    //   useFactory: (configService: ConfigService) => {
+    //     const isProduction = configService.get('NODE_ENV') === 'production';
+    //     return {
+    //       pinoHttp: {
+    //         transport: isProduction
+    //           ? undefined
+    //           : {
+    //               target: 'pino-pretty',
+    //               options: {
+    //                 singleLine: true,
+    //               },
+    //             },
+    //         level: isProduction ? 'info' : 'debug',
+    //       },
+    //     };
+    //   },
+    //   inject: [ConfigService],
+    // }),
     // REVIEW:
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),

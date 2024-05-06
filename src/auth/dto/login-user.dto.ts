@@ -9,11 +9,18 @@ import {
 } from 'class-validator';
 
 export class LoginUserDto {
+  @ApiProperty({
+    description: 'email must be unique',
+    type: String,
+  })
   @IsEmail()
   @IsNotEmpty()
-  @ApiProperty()
   email: string;
 
+  @ApiProperty({
+    description: 'password',
+    type: String,
+  })
   @IsString()
   @MinLength(4)
   @MaxLength(20)
