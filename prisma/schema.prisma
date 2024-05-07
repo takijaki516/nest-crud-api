@@ -76,15 +76,27 @@ model Product {
   name        String
   description String
   price       Decimal
-  tags        String
-  imageId     String?
+  tags        String? // TODO: enum
 
   // NOTE: Only ADMIN can create products
   userId String
-  users  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   cartItems CartItem[]
   orders    OrderProduct[]
+  images    ProductImage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  imageUrl  String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // NOTE: user id 가 필요할까?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

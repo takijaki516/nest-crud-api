@@ -1,24 +1,16 @@
 import {
   Body,
   Controller,
-  FileTypeValidator,
+  Delete,
   Get,
-  MaxFileSizeValidator,
   Param,
-  ParseFilePipe,
   Patch,
   Post,
   Query,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { randomUUID } from 'crypto';
+import { ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 
-import { PRODUCT_IMAGES } from './product-image';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { GetCurrentUser } from 'src/common/decorators/get-current-user.decorator';
@@ -26,46 +18,38 @@ import { IsAdminGuard } from 'src/auth/guards/is-admin.guard';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @UseGuards(JwtAuthGuard, IsAdminGuard)
   @Post()
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: PRODUCT_IMAGES,
-        filename: (req, file, callback) => {
-          callback(null, `${randomUUID()}.${extname(file.originalname)}`);
-        },
-      }),
-    }),
-  )
   async createProduct(
     @GetCurrentUser('id') userId: string,
     @Body() createProductDto: CreateProductDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 500000 }),
-          new FileTypeValidator({ fileType: 'image/jpeg' }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
   ) {
-    const product = await this.productsService.createProduct(
+    console.log(
+      '🚀 ~ file: products.controller.ts:31 ~ ProductsController ~ createProductDto:',
+      createProductDto,
+    );
+    const { image, product } = await this.productsService.createProduct(
       userId,
       createProductDto,
-      file.filename,
     );
 
-    return { message: 'created product successfully', data: product };
+    return {
+      message: 'created product successfully',
+      data: {
+        imageUrl: image.imageUrl,
+        product,
+      },
+    };
   }
 
-  // TODO: add query
+  // TODO: add swagger response schema
+  @ApiQuery({ name: 'size', required: false })
+  @ApiQuery({ name: 'page', required: false })
   @Get()
   async getProducts(
     @Query('size') size: string = '10',
@@ -76,6 +60,7 @@ export class ProductsController {
     return { message: 'got all products successfully', data: products };
   }
 
+  @ApiParam({ name: 'productId', required: true })
   @Get(':productId')
   async getProduct(@Param('productId') productId: string) {
     const product = await this.productsService.getProduct(productId);
@@ -83,7 +68,7 @@ export class ProductsController {
     return { message: 'got product by id successfully', data: product };
   }
 
-  // TODO: add image
+  // TODO:
   @UseGuards(JwtAuthGuard, IsAdminGuard)
   @Patch(':productId')
   async updateProduct(
@@ -96,6 +81,16 @@ export class ProductsController {
     );
 
     return { message: 'updated product by id successfully', data: product };
+  }
+
+  @UseGuards(JwtAuthGuard, IsAdminGuard)
+  @Delete(':productId')
+  async deleteProduct(
+    @GetCurrentUser('id') userId: string,
+    @Param('productId') productId: string,
+  ) {
+    await this.productsService.deleteProduct(userId, productId);
+    return { message: 'deleted product successfully' };
   }
 
   // TODO: add search product

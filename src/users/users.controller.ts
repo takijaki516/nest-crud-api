@@ -13,7 +13,9 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { GetCurrentUser } from 'src/common/decorators/get-current-user.decorator';
 import { AddAddressDto } from './dto/add-address.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

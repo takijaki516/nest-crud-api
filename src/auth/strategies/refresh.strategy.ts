@@ -5,7 +5,6 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 
 import { UsersService } from 'src/users/users.service';
-import { UserInfo } from 'src/types/req-user.type';
 import { TokenPayload } from '../token-payload';
 
 @Injectable()
@@ -28,7 +27,7 @@ export class RefreshJwtStrategy extends PassportStrategy(
     });
   }
 
-  async validate(payload: TokenPayload): Promise<UserInfo> {
+  async validate(payload: TokenPayload) {
     const { userId } = payload;
 
     const user = await this.usersService.getUserById(userId);
