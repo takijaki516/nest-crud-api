@@ -1,45 +1,80 @@
 import {
+  Body,
   Controller,
-  Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { OrdersService } from './orders.service';
 import { GetCurrentUser } from 'src/common/decorators/get-current-user.decorator';
-import { CreateUserDto } from 'src/auth/dto/create-user.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ChangeOrderStatusDto } from './dto/change-order-status.dto';
 
 @ApiTags('orders')
+@UseGuards(JwtAuthGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
-  async createOrder(
-    @GetCurrentUser('id') userId: string,
-    createOrderDto: CreateUserDto,
-  ) {
-    const order = await this.ordersService.createOrder(userId, createOrderDto);
+  async createOrder(@GetCurrentUser('id') userId: string) {
+    const order = await this.ordersService.createOrder(userId);
+
+    // TODO: 에러 타입 정의
+    if (order.status !== 'success') {
+      throw new Error(order.message);
+    }
 
     return { message: 'created order successfully', data: order };
   }
 
-  @UseGuards(JwtAuthGuard)
+  // TODO: add query pagination
   @Get()
-  async getOrders(@GetCurrentUser('id') userId: string) {
+  async getMyOrders(@GetCurrentUser('id') userId: string) {
     const orders = await this.ordersService.getOrders(userId);
 
     return { message: 'got all orders successfully', data: orders };
   }
 
-  @Delete('id')
-  async deleteOrder(@Param('id') id: string) {
-    await this.ordersService.deleteOrder(id);
+  @Get(':orderId')
+  async getMyOrderById(
+    @GetCurrentUser('id') userId: string,
+    @Param('orderId') orderId: string,
+  ) {
+    const order = await this.ordersService.getOrderById(userId, orderId);
 
-    return { message: 'deleted order successfully' };
+    return { message: 'got order successfully', data: order };
+  }
+
+  @Patch(':orderId/status')
+  async changeOrderStatus(
+    @GetCurrentUser('id') userId: string,
+    @Param('orderId') orderId: string,
+    @Body() changeOrderStatusDto: ChangeOrderStatusDto,
+  ) {
+    const changedOrder = await this.ordersService.changeOrderStatus(
+      userId,
+      orderId,
+      changeOrderStatusDto,
+    );
+
+    return { message: 'changed order status successfully', data: changedOrder };
+  }
+
+  @Patch('orderId')
+  async cancelOrder(
+    @GetCurrentUser('id') userId: string,
+    @Param('orderId') orderId: string,
+  ) {
+    const cancelledOrder = await this.ordersService.cancelOrder(
+      userId,
+      orderId,
+    );
+
+    return { message: 'cancelled order successfully', data: cancelledOrder };
   }
 }

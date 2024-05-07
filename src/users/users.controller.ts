@@ -60,10 +60,10 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Post('address')
   async addAddress(
-    @GetCurrentUser('email') email: string,
+    @GetCurrentUser('id') userId: string,
     @Body() addAddressDto: AddAddressDto,
   ) {
-    const address = await this.usersService.addAddress(email, addAddressDto);
+    const address = await this.usersService.addAddress(userId, addAddressDto);
 
     return { message: 'added address', data: address };
   }
