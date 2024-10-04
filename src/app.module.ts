@@ -34,12 +34,14 @@ import { S3Module } from './s3/s3.module';
     //   },
     //   inject: [ConfigService],
     // }),
+    //
     // REVIEW:
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),
     ConfigModule.forRoot({
-      cache: true,
+      // set cache to true in production
+      cache: false,
       isGlobal: true,
     }),
     AuthModule,
@@ -50,7 +52,5 @@ import { S3Module } from './s3/s3.module';
     OrdersModule,
     S3Module,
   ],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}

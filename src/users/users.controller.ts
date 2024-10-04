@@ -22,8 +22,8 @@ export class UsersController {
 
   @Get()
   async getUsers() {
-    const users = await this.usersService.getUsers();
-    return { message: 'get users', data: users };
+    // const users = await this.usersService.getUsers();
+    return { message: 'get users', data: 'test user' };
   }
 
   // TODO:
