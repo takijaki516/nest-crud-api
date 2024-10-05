@@ -7,7 +7,6 @@ import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
-import { AddAddressDto } from './dto/add-address.dto';
 
 @Injectable()
 export class UsersService {
@@ -69,40 +68,5 @@ export class UsersService {
 
   async getUsers() {
     return this.prismaService.user.findMany();
-  }
-
-  async getAddresses(userId: string) {
-    return await this.prismaService.address.findMany({
-      where: {
-        userId: userId,
-      },
-    });
-  }
-
-  async addAddress(userId: string, addAddressDto: AddAddressDto) {
-    return await this.prismaService.address.create({
-      data: {
-        city: addAddressDto.city,
-        country: addAddressDto.country,
-        lineOne: addAddressDto.lineOne,
-        lineTwo: addAddressDto.lineTwo,
-        zipcode: addAddressDto.zipcode,
-        user: {
-          connect: { id: userId },
-        },
-      },
-    });
-  }
-
-  async deleteAddress(addressId: string) {
-    try {
-      return await this.prismaService.address.delete({
-        where: {
-          id: addressId,
-        },
-      });
-    } catch (error) {
-      throw new InternalServerErrorException('delete address error');
-    }
   }
 }

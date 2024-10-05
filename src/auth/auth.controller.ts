@@ -97,7 +97,6 @@ export class AuthController {
     return { message: 'refresh successful', data: accessToken };
   }
 
-  // TODO:
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('logout')

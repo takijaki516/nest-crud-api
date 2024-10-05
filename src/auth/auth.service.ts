@@ -117,6 +117,7 @@ export class AuthService {
   private async rotateRefreshToken(rfPayload: TokenPayload) {
     const userId = rfPayload.userId;
 
+    // NOTE: deleteMany. why not delete the specific token?
     await this.prismaService.refreshToken.deleteMany({
       where: {
         userId: userId,
